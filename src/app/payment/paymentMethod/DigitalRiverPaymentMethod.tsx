@@ -20,14 +20,32 @@ const DigitalRiverPaymentMethod: FunctionComponent<DigitalRiverPaymentMethodProp
     formik: { submitForm },
     ...rest
 }) => {
+    function getLocale() {
+        const supportedLocales = rest.method.initializationData?.regionalDefaultLocales.supported;
+
+        if (supportedLocales.indexOf(navigator.language) >= 0) {
+            return navigator.language;
+        }
+
+        const languagePrefix = navigator.language.split('-')[0];
+        const languageDefaults = rest.method.initializationData?.regionalDefaultLocales.defaults;
+
+        if (languageDefaults[languagePrefix] !== undefined) {
+            return languageDefaults[languagePrefix];
+        }
+
+        return 'en-US';
+    }
     const { setSubmitted } = useContext(FormContext);
     const containerId = `${rest.method.id}-component-field`;
     const disabledPaymentMethods = rest.method.initializationData?.disabledPaymentMethods ?? [];
+    const locale = getLocale();
 
     const initializeDigitalRiverPayment = useCallback(options => initializePayment({
         ...options,
         digitalriver: {
             containerId,
+            locale,
             configuration: {
                 flow: 'checkout',
                 showSavePaymentAgreement: false,
@@ -50,7 +68,7 @@ const DigitalRiverPaymentMethod: FunctionComponent<DigitalRiverPaymentMethodProp
                 onUnhandledError?.(error);
             },
         },
-    }), [initializePayment, containerId, disabledPaymentMethods, setSubmitted, submitForm, onUnhandledError]);
+    }), [initializePayment, containerId, disabledPaymentMethods, locale, setSubmitted, submitForm, onUnhandledError]);
 
     return <HostedDropInPaymentMethod
         { ...rest }
